@@ -1,0 +1,42 @@
+To run this program, you have to start with the server file first then the client file.
+You will get a prompt to enter a username, it must be under 20 characters.
+For the client to quit from the server enter "/quit" to leave
+
+NOTES:
+	-Didn't handle a case where user sends signal to client
+
+
+CHANGES:
+
+Changes made to client file: Essentially the changes made so that the client works
+
+	-fd_set is only the reading set, reads from stdin and the connected socket
+	
+	-additional read and writes are added to allow the client to send their username to
+	the server and to recieve the incoming welcome message from the server
+
+	-client does not take any input from user, no way to change ip address or port number
+	***** This means that the ip address is 127.0.0.1 with the port number 8080 *****
+
+	-server also does not take in any input from the user, hard coded with the same ip
+	address and port number 
+
+	-added string manipulation for the messaging to include the username when client sends
+	a message
+
+
+Server Features:
+
+	-Crude message log
+		-Displays the chatroom messages with their corrisponding user and displays the socket
+		the client uses
+	
+	-Quitting cross platforms
+		-The quit command is supported for any machine (windows vs other). On window machines
+		"/quit" == "/quit\r\n" and for other machines "/quit" == "/quit\n". 
+
+	-Connected vs Disconnected Updates
+		-The server will be notified when a client connects or disconnects. An output is provided
+		when a client leaves or joins.
+
+		 

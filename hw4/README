@@ -1,0 +1,2 @@
+This shell handles one command per line. When terminating a process using ctrl-c or ctrl-\, it has the key entered on 
+screen, but it ignores the signal.

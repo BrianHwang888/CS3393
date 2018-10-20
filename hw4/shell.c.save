@@ -1,0 +1,58 @@
+#include <errno.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BUFFER 1024
+
+extern char **environ;
+
+char* read_line();
+//parse_line();
+
+int main(int argc, char *argv[]){
+	char *temp = malloc(sizeof(char) * MAX_BUFFER);
+	char *key;
+	char *workin_dir;
+	char *line;
+	int i;
+	if(temp == NULL){
+		perror("Failed to malloc for PWD\n");
+		exit(EXIT_FAILURE);
+	}
+	memset(temp, '\0', MAX_BUFFER);
+	for(i = 0; strcmp(key, "PWD") != 0; i++){
+/*		if(strlen(temp) < strlen(environ[i]) && i != 0){
+			temp = realloc(temp, sizeof(char) * strlen(environ[i]) + 1);
+			memset(temp, '\0', strlen(environ[i]) + 1);
+		}*/
+		strcpy(temp, environ[i]);
+		key = strtok(temp, "=");
+//		puts(temp);
+	}
+
+	workin_dir = strtok(NULL, "=");
+	do{
+		printf("%s>", workin_dir);
+		line = read_line();
+		puts(line);
+	}while(strcmp(line, "q") != 0);
+
+//	free(temp);
+//	free(line);
+	exit(EXIT_SUCCESS);
+}
+
+char* read_line(){
+	char *buffer = malloc(sizeof(char) * MAX_BUFFER);
+
+	if (buffer == NULL){
+		perror("Failed to allocate memory for buffer\n");
+		exit(EXIT_FAILURE);
+	}
+
+	scanf("%s", buffer);
+
+	return buffer;
+}

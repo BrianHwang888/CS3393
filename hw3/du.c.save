@@ -1,0 +1,142 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <string.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+//constants
+//Maxium length for path for Linux system
+#define MAX_PATH 4096
+#define ZERO 0
+
+//globals
+int kilibyte = 1024;
+int numFiles = 100;
+int arr_index = 0;
+
+//struct holding file IDs
+typedef struct file_ID{
+	dev_t file_dev;
+	ino_t file_ino;
+}f_id;
+
+int scan_dir(const char* path, int (*fcn)(const char *));
+int file_check(const char* path, f_id **file_list);
+void realloc_fileList(f_id **file_list);
+void add_fileEntry(f_id **file_list, dev_t dev_num, ino_t ino);
+
+int main(int argc, char *argv[]){
+	struct stat file_stat;
+	const char* path = argv[1];
+	f_id **file_list;
+
+	file_list = malloc(sizeof(f_id*) * numFiles);
+	for(arr_index = 0; arr_index < numFiles; arr_index++)
+		file_list[arr_index] = malloc(sizeof(f_id));
+
+/*	for(arr_index = 0; arr_index < numFiles; arr_index++){
+        (*file_list[arr_index]).file_dev = arr_index;
+		file_list[arr_index]->file_ino = arr_index + 1;
+		printf("File entry info: %ld		%ld\n", file_list[arr_index]->file_dev, (*file_list[arr_index]).file_ino);
+}*/
+	arr_index = ZERO;
+
+	if(argc == 1)
+		file_check(".", &file_list);
+
+	if(lstat(path, &file_stat) == -1){
+		fprintf(stderr, "Failed to stat %s\n", path);
+		exit(EXIT_FAILURE);
+	}
+	if((file_stat.st_mode & S_IFREG) == S_IFREG)
+		printf("%ld          [%s]\n", file_stat.st_blocks * file_stat.st_blksize / kilibyte, path);
+
+	else
+		file_check(path, &file_list);
+
+/*	for(arr_index = 0; arr_index < numFiles; arr_index++)
+		free(file_list[arr_index]);
+	free(file_list);*/
+}
+
+void add_fileEntry(f_id **file_list, dev_t dev_num, ino_t ino){
+	if(arr_index == numFiles)
+        realloc_fileList(file_list);
+    (*file_list)[arr_index]->file_dev = dev_num;
+    (*file_list)[arr_index]->file_ino = ino;
+    arr_index++;
+
+}
+
+int file_check(const char* path, f_id **file_list){
+	struct stat file_stat;
+	int dir_size = 0;
+
+	if(lstat(path, &file_stat) == -1){
+		fprintf(stderr, "Failed to stat %s\n", path);
+		exit(EXIT_FAILURE);
+	}
+	add_fileEntry(file_list, file_stat.st_dev, file_stat.st_ino);
+
+	if((file_stat.st_mode & S_IFDIR) == S_IFDIR){
+		dir_size = scan_dir(path, &file_check);
+		printf("%d			[%s]\n", dir_size, path);
+//		dir_size = 0;
+	}
+	else if((file_stat.st_mode & S_IFREG) == S_IFREG){
+//		printf("ino for %s: %ld\n", path, file_stat.st_ino);
+//		printf("Size of %s: %ld\n", path, file_stat.st_blocks * file_stat.st_blksize /1024);
+//		printf("Num hard links for %s in device %ld: %ld\n", path, file_stat.st_dev, file_stat.st_nlink);
+		dir_size = (file_stat.st_blocks * file_stat.st_blksize) / kilibyte;
+	}
+	return dir_size;
+}
+
+int scan_dir(const char* path, int (*fcn)(const char *)){
+	DIR *dfd;
+ 	struct dirent *dir_stat;
+	char *name = malloc(sizeof(char) * MAX_PATH);
+	int dir_size = 0;
+	if(name == NULL){
+		perror("Failed to allocate memory for name\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if((dfd = opendir(path)) == NULL){
+            fprintf(stderr, "Can't open: %s\n", path);
+			exit(EXIT_FAILURE);
+    }
+
+    while((dir_stat = readdir(dfd)) != NULL){
+//		printf("%s d_ino: %ld\n", dir_stat->d_name, dir_stat->d_ino);
+		if(strcmp(dir_stat->d_name, ".") != 0 && strcmp(dir_stat->d_name, "..") != 0){
+			if(strlen(dir_stat->d_name) + strlen(path) + 2 > MAX_PATH){
+            	        fprintf(stderr, "Path name too long: %s", dir_stat->d_name);
+                	    exit(EXIT_FAILURE);
+                	}
+        	else{
+//				printf("File: %s\n", dir_stat->d_name);
+				sprintf(name, "%s/%s", path, dir_stat->d_name);
+				dir_size += (*fcn)(name);
+			}
+		}
+	}
+	free(name);
+	closedir(dfd);
+	return dir_size;
+}
+
+//double the size of fileList if its full
+void realloc_fileList(f_id **file_list){
+	*file_list = realloc(file_list, sizeof(f_id *) * numFiles * 2);
+
+	for(;arr_index < (numFiles + arr_index) ;arr_index++)
+		(*file_list)[arr_index] = malloc(sizeof(f_id));
+
+	numFiles = numFiles * 2;
+}
+

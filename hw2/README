@@ -1,0 +1,3 @@
+The program works, except when executing ./env... env ... it says there is no such file or directory.
+Also the freeing of allocated memory causes errors. I have commented them out in the code in the parts
+I wrote them in. I don't understand why it causes errors. 
